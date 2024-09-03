@@ -120,7 +120,7 @@ func splitFile(cfg config, updateProgress func(float64)) error {
 			}
 			progressBar := float64(offset) / float64(totalSize)
 
-			// Add a small delay to slow down the progressBar bar
+			// Delay to slow down the progressBar bar
 			time.Sleep(10 * time.Millisecond)
 
 			updateProgress(progressBar)
