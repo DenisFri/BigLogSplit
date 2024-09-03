@@ -1,0 +1,5 @@
+{
+  "filePath": "path/to/your/largefile.log",
+  "maxSizeMB": 200,
+  "outputFolder": "path/to/your/output/folder"
+}
