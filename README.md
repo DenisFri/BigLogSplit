@@ -20,8 +20,8 @@ This Go script splits large log files into smaller parts. This project uses the 
 2. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/yourrepository.git
-   cd yourrepository
+   git clone https://github.com/DenisFri/BigLogSplit.git
+   cd BigLogSplit
    ```
 
 3. **Install Dependencies:**
