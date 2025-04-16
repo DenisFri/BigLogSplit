@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"BigLogSplit/internal/config"
+	"BigLogSplit/internal/ui"
 )
 
-func SplitFile(cfg config.Config, updateProgress func(float64)) error {
+func SplitFile(cfg config.Config, updateProgress func(interface{})) error {
 	file, err := os.Open(cfg.FilePath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)
@@ -25,8 +26,14 @@ func SplitFile(cfg config.Config, updateProgress func(float64)) error {
 
 	totalSize := fileInfo.Size()
 
+	// Ensure the output directory exists
+	if err := os.MkdirAll(cfg.OutputFolder, 0755); err != nil {
+		return fmt.Errorf("error creating output directory: %w", err)
+	}
+
 	partNumber := 1
 	buffer := make([]byte, 1024*1024) // 1 MB buffer
+	totalProcessed := int64(0)
 
 	for {
 		partFilePath := filepath.Join(cfg.OutputFolder, fmt.Sprintf("part%d.log", partNumber))
@@ -54,17 +61,17 @@ func SplitFile(cfg config.Config, updateProgress func(float64)) error {
 			writer.Flush()
 
 			partSize += int64(n)
+			totalProcessed += int64(n)
 
-			offset, err := file.Seek(0, io.SeekCurrent)
-			if err != nil {
-				partFile.Close()
-				return fmt.Errorf("error getting file offset: %w", err)
-			}
-			progressBar := float64(offset) / float64(totalSize)
+			progressBar := float64(totalProcessed) / float64(totalSize)
 
 			time.Sleep(10 * time.Millisecond) // Slow down the progress bar for visual effect
 
-			updateProgress(progressBar)
+			// Send both progress percentage and processed bytes
+			updateProgress(ui.ProgressUpdate{
+				Percent:        progressBar,
+				ProcessedBytes: totalProcessed,
+			})
 		}
 		writer.Flush()
 		partFile.Close()
@@ -76,6 +83,10 @@ func SplitFile(cfg config.Config, updateProgress func(float64)) error {
 		partNumber++
 	}
 
-	updateProgress(1.0) // Mark progress as 100% complete
+	// Mark progress as 100% complete with total size
+	updateProgress(ui.ProgressUpdate{
+		Percent:        1.0,
+		ProcessedBytes: totalSize,
+	})
 	return nil
 }

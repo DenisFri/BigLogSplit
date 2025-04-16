@@ -6,6 +6,9 @@ This Go script splits large log files into smaller parts. This project uses the 
 
 - **Split Large Files:** The program can split large log files into smaller parts, each of a specified maximum size.
 - **Terminal Progress Bar:** The progress of the file splitting is displayed as a progress bar in the terminal.
+- **File Size Metrics:** Shows processed and total file size in human-readable format (KB, MB, GB).
+- **ETA Calculation:** Displays estimated time remaining to complete the file splitting.
+- **Dynamic UI:** Uses a spinner for small files and a progress bar for larger files.
 - **Completion Message:** Once the file is fully split, a completion message is shown, and the program waits for a key press before exiting.
 
 ## Installation
@@ -24,6 +27,7 @@ This Go script splits large log files into smaller parts. This project uses the 
    ```bash
    go get github.com/charmbracelet/bubbletea
    go get github.com/charmbracelet/bubbles/progress
+   go get github.com/charmbracelet/bubbles/spinner
    ```
    
 4. **Build the Program:**
@@ -69,9 +73,16 @@ Given a `config.json` file with the following content:
 ```
 The program will split `LargeLogFile.log` into parts of 100 MB each, saving them in the SplitLogs directory on your desktop.
 
+## UI Features
+
+- **Progress Bar:** For files larger than 10MB, a progress bar shows the percentage completed.
+- **Spinner:** For smaller files, a spinner animation is displayed instead of a progress bar.
+- **File Size Display:** Shows how much of the file has been processed (e.g., "1.25 MB of 5.00 MB").
+- **ETA Display:** Shows the estimated time remaining to complete the operation.
+
 ## Customization
 
-You can adjust the speed of the progress bar by modifying the `time.Sleep(50 * time.Millisecond)` line in the `splitFile` function within the `main.go` file. Adjust the duration to control how quickly the progress bar updates.
+You can adjust the speed of the progress bar by modifying the `time.Sleep(10 * time.Millisecond)` line in the `splitFile` function within the `split.go` file. Adjust the duration to control how quickly the progress bar updates.
 
 ## Acknowledgements
 

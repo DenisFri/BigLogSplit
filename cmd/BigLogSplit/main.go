@@ -18,12 +18,21 @@ func main() {
 		return
 	}
 
-	p := ui.NewModel()
+	// Get the file size for UI initialization
+	fileInfo, err := os.Stat(cfg.FilePath)
+	if err != nil {
+		fmt.Println("Error getting file info:", err)
+		return
+	}
+	totalSize := fileInfo.Size()
+
+	// Initialize the UI with the total file size
+	p := ui.NewModel(totalSize)
 	prog := tea.NewProgram(p)
 
 	go func() {
-		if err := split.SplitFile(cfg, func(percent float64) {
-			prog.Send(percent)
+		if err := split.SplitFile(cfg, func(update interface{}) {
+			prog.Send(update)
 		}); err != nil {
 			fmt.Println("Error splitting file:", err)
 			prog.Send(tea.Quit())
