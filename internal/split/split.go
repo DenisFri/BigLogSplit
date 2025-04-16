@@ -13,6 +13,15 @@ import (
 	"BigLogSplit/internal/ui"
 )
 
+// ProcessStatus represents the current operation being performed
+type ProcessStatus string
+
+const (
+	StatusSplitting ProcessStatus = "Splitting"
+	StatusFiltering ProcessStatus = "Filtering"
+	StatusAnalyzing ProcessStatus = "Analyzing"
+)
+
 func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error {
 	file, err := os.Open(cfg.FilePath)
 	if err != nil {
@@ -38,9 +47,28 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 		analysisResult = analysis.NewAnalysisResult()
 	}
 
+	// Determine how many passes we need to make
+	totalPasses := 1.0 // Splitting is always required
+	if cfg.Filtering.Mode != config.FilterModeNone && len(cfg.FilterPatternRegexps) > 0 {
+		totalPasses += 0.2 // Filtering adds 20% to progress calculation
+	}
+	if cfg.Analysis.Enabled {
+		totalPasses += 0.3 // Analysis adds 30% to progress calculation
+	}
+
+	// Reset file position
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("error seeking file: %w", err)
+	}
+
 	partNumber := 1
 	totalProcessed := int64(0)
 	reader := bufio.NewReader(file)
+
+	// Update UI to show we're starting the splitting process
+	updateProgress(ui.StatusUpdate{
+		Status: string(StatusSplitting),
+	})
 
 	for {
 		partFilePath := filepath.Join(cfg.OutputFolder, fmt.Sprintf("part%d.log", partNumber))
@@ -67,9 +95,10 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 			lineNumber++
 			lineSize := int64(len(line))
 
-			// Apply filtering if enabled
+			// Apply filtering if enabled - now considered part of the splitting process
+			shouldInclude := true
 			if cfg.Filtering.Mode != config.FilterModeNone && len(cfg.FilterPatternRegexps) > 0 {
-				shouldInclude := analysis.FilterLine(
+				shouldInclude = analysis.FilterLine(
 					line,
 					string(cfg.Filtering.Mode),
 					cfg.FilterPatternRegexps,
@@ -92,7 +121,7 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 			partSize += lineSize
 			totalProcessed += lineSize
 
-			// If analysis is enabled, check patterns
+			// If analysis is enabled, process it in-line with splitting
 			if cfg.Analysis.Enabled {
 				analysisResult.TotalLines++
 				analysisResult.ProcessedBytes += lineSize
@@ -140,15 +169,20 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 				}
 			}
 
-			progressBar := float64(totalProcessed) / float64(totalSize)
+			// Calculate progress considering all operations
+			// Base progress is based on how much file we've processed
+			baseProgress := float64(totalProcessed) / float64(totalSize)
+
+			// Scale the base progress to account for the fraction that splitting represents
+			scaledProgress := baseProgress / totalPasses
 
 			// Update progress less frequently for better performance
 			if totalProcessed%int64(1024*1024) == 0 { // Update every ~1MB
 				time.Sleep(10 * time.Millisecond) // Small delay for UI updates
 
-				// Send both progress percentage and processed bytes
+				// Send progress update
 				updateProgress(ui.ProgressUpdate{
-					Percent:        progressBar,
+					Percent:        scaledProgress,
 					ProcessedBytes: totalProcessed,
 				})
 			}
@@ -174,8 +208,27 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 		partNumber++
 	}
 
-	// Write analysis report if enabled
+	// Splitting is complete, now we're at the base progress level
+	splitProgress := 1.0 / totalPasses
+
+	// If analysis report needs to be written, show that as an additional step
 	if cfg.Analysis.Enabled && cfg.Analysis.OutputFile != "" {
+		// Update status to show we're now analyzing
+		updateProgress(ui.StatusUpdate{
+			Status: string(StatusAnalyzing),
+		})
+
+		// Show progress in the analysis phase
+		for i := 0; i < 5; i++ { // Simulate analysis progress steps
+			time.Sleep(100 * time.Millisecond)
+			analysisProgress := splitProgress + (0.3 * float64(i+1) / 5.0) // Incremental progress in analysis phase
+
+			updateProgress(ui.ProgressUpdate{
+				Percent:        analysisProgress,
+				ProcessedBytes: totalSize, // Keep the processed bytes at total file size
+			})
+		}
+
 		outputPath := cfg.Analysis.OutputFile
 		if !filepath.IsAbs(outputPath) {
 			outputPath = filepath.Join(cfg.OutputFolder, outputPath)
@@ -191,5 +244,6 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 		Percent:        1.0,
 		ProcessedBytes: totalSize,
 	})
+
 	return nil
 }

@@ -17,6 +17,11 @@ type ProgressUpdate struct {
 	ProcessedBytes int64
 }
 
+// StatusUpdate contains information about the current operation
+type StatusUpdate struct {
+	Status string
+}
+
 type Model struct {
 	progress      progress.Model
 	spinner       spinner.Model
@@ -27,6 +32,7 @@ type Model struct {
 	totalSize     int64
 	processedSize int64
 	useSpinner    bool
+	currentStatus string
 }
 
 func NewModel(totalSize int64) Model {
@@ -47,6 +53,7 @@ func NewModel(totalSize int64) Model {
 		totalSize:     totalSize,
 		processedSize: 0,
 		useSpinner:    useSpinner,
+		currentStatus: "Initializing",
 	}
 }
 
@@ -67,6 +74,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+	case StatusUpdate:
+		m.currentStatus = msg.Status
+		return m, nil
 	case ProgressUpdate:
 		m.percent = msg.Percent
 		m.processedSize = msg.ProcessedBytes
@@ -99,6 +109,9 @@ func (m Model) View() string {
 
 	var sb strings.Builder
 	sb.WriteString("\n")
+
+	// Show current operation status
+	sb.WriteString(fmt.Sprintf("Operation: %s\n", m.currentStatus))
 
 	// Show progress info
 	if m.useSpinner {
