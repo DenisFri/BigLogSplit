@@ -1,5 +1,25 @@
 {
   "filePath": "path/to/your/largefile.log",
   "maxSizeMB": 200,
-  "outputFolder": "path/to/your/output/folder"
+  "outputFolder": "path/to/your/output/folder",
+  "analysis": {
+    "enabled": true,
+    "errorPatterns": [
+      "\\bERROR\\b",
+      "\\bException\\b",
+      "\\bFAILED\\b"
+    ],
+    "customPatterns": [
+      "\\bAPI\\b",
+      "\\bUSER\\:[0-9]+\\b"
+    ],
+    "outputFile": "analysis_report.md"
+  },
+  "filtering": {
+    "mode": "none",
+    "patterns": [
+      "\\bDEBUG\\b",
+      "\\bTRACE\\b"
+    ]
+  }
 }

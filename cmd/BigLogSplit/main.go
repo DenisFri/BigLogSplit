@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"BigLogSplit/internal/config"
 	"BigLogSplit/internal/split"
@@ -25,6 +26,17 @@ func main() {
 		return
 	}
 	totalSize := fileInfo.Size()
+
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(cfg.OutputFolder, 0755); err != nil {
+		fmt.Println("Error creating output directory:", err)
+		return
+	}
+
+	// Set default analysis output file if enabled but not specified
+	if cfg.Analysis.Enabled && cfg.Analysis.OutputFile == "" {
+		cfg.Analysis.OutputFile = filepath.Join(cfg.OutputFolder, "analysis_report.md")
+	}
 
 	// Initialize the UI with the total file size
 	p := ui.NewModel(totalSize)
