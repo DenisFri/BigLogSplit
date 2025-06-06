@@ -148,7 +148,7 @@ The filtering feature allows you to control which lines are included in the outp
 
 ## Customization
 
-You can adjust the speed of the progress bar by modifying the `time.Sleep(10 * time.Millisecond)` line in the `splitFile` function within the `split.go` file. Adjust the duration to control how quickly the progress bar updates.
+You can adjust the speed of the progress bar by modifying the `time.Sleep(10 * time.Millisecond)` line in the `SplitFile` function within the `split.go` file. Adjust the duration to control how quickly the progress bar updates.
 
 ## Acknowledgements
 
