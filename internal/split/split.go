@@ -64,6 +64,7 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 	partNumber := 1
 	totalProcessed := int64(0)
 	reader := bufio.NewReader(file)
+	lastUpdateBytes := int64(0)
 
 	// Update UI to show we're starting the splitting process
 	updateProgress(ui.StatusUpdate{
@@ -176,8 +177,10 @@ func SplitFile(cfg config.RuntimeConfig, updateProgress func(interface{})) error
 			// Scale the base progress to account for the fraction that splitting represents
 			scaledProgress := baseProgress / totalPasses
 
-			// Update progress less frequently for better performance
-			if totalProcessed%int64(1024*1024) == 0 { // Update every ~1MB
+			// Update progress roughly every megabyte processed
+			if totalProcessed-lastUpdateBytes >= int64(1024*1024) {
+				lastUpdateBytes = totalProcessed
+
 				time.Sleep(10 * time.Millisecond) // Small delay for UI updates
 
 				// Send progress update
